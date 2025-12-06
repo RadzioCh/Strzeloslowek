@@ -1,7 +1,6 @@
 harvest;żniwa/zbiór
 bounty;hojność
 growth;wzrost
-digging;kopać
 nourish;karmić/odżywiać
 rowing;wiosłowanie
 jellyfish;meduza

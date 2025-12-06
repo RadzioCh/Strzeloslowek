@@ -55,12 +55,9 @@ class Aplikacja:
 
         self.obszar_gry.place(x=x1, y=y1, width=width, height=height)
 
-        
-
         # pobieramy słówka
         self.getWords = GetWords()
         words = self.getWords.get_word_list()
-
 
         self.countWords = len(words)
         countWordsArray = (self.countWords -1)
@@ -93,10 +90,57 @@ class Aplikacja:
         self.placed_boxes = []
         self.obszar_gry.delete("all")
 
+        points = "PUNKTY: " + str(len(self.remember_good_word)) + " / " + str(self.countWords)
+        self.obszar_gry.update_idletasks()
+        cx = (self.obszar_gry.winfo_width() // 2) - 120
+        self.obszar_gry.create_text(
+            cx, 10,
+            anchor="nw",
+            font=("Arial", 20),
+            fill="black",
+            width=500,
+            justify="center",
+            text=points
+        )
+
+        if self.countWords == len(self.remember_good_word):
+            try:
+                self.obszar_gry.update_idletasks()
+                cx = (self.obszar_gry.winfo_width() // 2)
+                cy = self.obszar_gry.winfo_height() // 2
+            except Exception:
+                cx, cy = 200, 200
+
+            text_winer = self.obszar_gry.create_text(
+                cx, cy,
+                text="BRAWO! Wszystkie słowa opanowane!",
+                anchor="w",
+                font=("Arial", 50),
+                fill="black",
+                width=self.obszar_gry.winfo_width(),
+                justify="center"
+            )
+            self.obszar_gry.tag_lower(text_winer)
+            self.word_map = {}
+            self.placed_boxes = []
+            #self.obszar_gry.delete("all")
+            if self.crosshair:
+                self.crosshair.destroy()
+                self.crosshair = None
+                return
+
+
         i = random.randint(0, countWordsArray)
         # słówka do nauki
         wordToLearn = words[i][0]
         wordTranslation = words[i][1]
+
+        if wordToLearn.upper() in self.remember_good_word:
+            while wordToLearn.upper() in self.remember_good_word:
+                i = random.randint(0, countWordsArray)
+                wordToLearn = words[i][0]
+                wordTranslation = words[i][1]
+
         #słówka aby zrobić szum
         noisePool = [w for idx, w in enumerate(words) if idx != i]
         noiseWords = random.sample(noisePool, 5)
@@ -241,7 +285,7 @@ class Aplikacja:
         
         try:
             self.obszar_gry.update_idletasks()
-            cx = (self.obszar_gry.winfo_width() // 2)
+            cx = (self.obszar_gry.winfo_width() // 2) - 250
             cy = self.obszar_gry.winfo_height() // 2
         except Exception:
             cx, cy = 200, 200
@@ -264,9 +308,9 @@ class Aplikacja:
                 self.obszar_gry.tag_lower(text_ok)
                 self.remember_good_word[info['word']] = True
 
-                # usuń komunikaty po 1.5 sekundy
-                self.root.after(1200, lambda: (self.obszar_gry.delete(text_ok) if text_ok else None))
-                self.root.after(1300, lambda: self.reload_game())
+                # usuń komunikaty po x 
+                self.root.after(800, lambda: (self.obszar_gry.delete(text_ok) if text_ok else None))
+                self.root.after(900, lambda: self.reload_game())
 
             elif info['word'] != translatWorld['word']:
                 bad_text = self.obszar_gry.create_text(
@@ -281,6 +325,7 @@ class Aplikacja:
                 self.obszar_gry.tag_lower(bad_text)
                 self.word_map = {}
                 self.placed_boxes = []
+                self.remember_good_word = {}
                 #self.obszar_gry.delete("all")
                 if self.crosshair:
                     self.crosshair.destroy()
