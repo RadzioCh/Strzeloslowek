@@ -1,0 +1,14 @@
+harvest;żniwa/zbiór
+bounty;hojność
+growth;wzrost
+digging;kopać
+nourish;karmić/odżywiać
+rowing;wiosłowanie
+jellyfish;meduza
+whale;wieloryb
+blue whale;płetwal błękitny
+hare;zając
+to reach;dosięgać
+to dig;kopać
+plate;talerz
+boar;dzik
