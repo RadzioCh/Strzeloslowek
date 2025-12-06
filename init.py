@@ -3,6 +3,7 @@ from GetWords import GetWords
 from Crosshair import Crosshair
 import random
 from tkinter import font as tkfont
+from time import sleep
 
 class Aplikacja:
     def __init__(self, root):
@@ -34,6 +35,9 @@ class Aplikacja:
         # mapowanie tag -> dane słowa (do obsługi kliknięć)
         self.word_map = {}
         self.remember_good_word = {}
+        self.countWords = 0
+
+
         
 
     def start(self):
@@ -57,7 +61,38 @@ class Aplikacja:
         self.getWords = GetWords()
         words = self.getWords.get_word_list()
 
-        countWordsArray = (len(words) -1)
+
+        self.countWords = len(words)
+        countWordsArray = (self.countWords -1)
+        self.countWordsArray = countWordsArray
+        self.words = words
+        self.width = width
+        self.height = height
+
+        if self.countWords > len(self.remember_good_word):
+            self.new_load_words(countWordsArray, words, width, height)
+        else:
+            try:
+                self.obszar_gry.update_idletasks()
+                cx = (self.obszar_gry.winfo_width() // 2) - 450
+                cy = self.obszar_gry.winfo_height() // 2
+            except Exception:
+                cx, cy = 200, 200
+
+            text_ok = self.obszar_gry.create_text(
+                cx, cy,
+                text="BRAWO! Wszystkie słowa opanowane!",
+                anchor="w",
+                font=("Arial", 60),
+                fill="black"
+            )
+            self.obszar_gry.tag_lower(text_ok)
+
+    def new_load_words(self, countWordsArray, words, width=0, height=0):
+        self.word_map = {}
+        self.placed_boxes = []
+        self.obszar_gry.delete("all")
+
         i = random.randint(0, countWordsArray)
         # słówka do nauki
         wordToLearn = words[i][0]
@@ -72,6 +107,9 @@ class Aplikacja:
 
         # utwórz celowniczek który będzie śledzić mysz nad canvassem
         self.crosshair = Crosshair(self.obszar_gry)
+
+    def reload_game(self):
+        self.new_load_words(self.countWordsArray, self.words, self.width, self.height)
 
 
     def writeWord(self, word, translateWord, width, height, showTranslaction=False):
@@ -188,6 +226,8 @@ class Aplikacja:
             "text_id": text_id
         }
 
+    
+
     def on_word_click(self, event, tag):
         """Obsługa kliknięcia w słowo na canvasie."""
         text_ok = None
@@ -201,14 +241,14 @@ class Aplikacja:
         
         try:
             self.obszar_gry.update_idletasks()
-            cx = (self.obszar_gry.winfo_width() // 2) - 250
+            cx = (self.obszar_gry.winfo_width() // 2)
             cy = self.obszar_gry.winfo_height() // 2
         except Exception:
             cx, cy = 200, 200
 
         
         # przykładowa akcja: wypisz i chwilowo podświetl ramkę
-        print(f"Kliknięto: {info['word']}  tłum.: {info.get('translate')}")
+        #print(f"Kliknięto: {info['word']}  tłum.: {info.get('translate')}")
         try:
             if info['word'] == translatWorld['word']:
                 text_ok = self.obszar_gry.create_text(
@@ -216,23 +256,36 @@ class Aplikacja:
                     text="GOOD JOB!",
                     anchor="w",
                     font=("Arial", 60),
-                    fill="black"
+                    fill="black",
+                    width=300,
+                    justify="center"
                 )
-                print("Dobrze trafione!")
 
                 self.obszar_gry.tag_lower(text_ok)
-                self.remember_good_word = info['word']
+                self.remember_good_word[info['word']] = True
+
+                # usuń komunikaty po 1.5 sekundy
+                self.root.after(1200, lambda: (self.obszar_gry.delete(text_ok) if text_ok else None))
+                self.root.after(1300, lambda: self.reload_game())
 
             elif info['word'] != translatWorld['word']:
                 bad_text = self.obszar_gry.create_text(
                     cx, cy,
-                    text="GAME OVER",
-                    anchor="w",
-                    font=("Arial", 60),
-                    fill="black"
+                    text=f"GAME OVER\nPrawidłowe słówko to: {translatWorld['word']}",
+                    anchor="center",
+                    font=("Arial", 40),
+                    fill="black",
+                    width=700,
+                    justify="center"
                 )
                 self.obszar_gry.tag_lower(bad_text)
-                print("Niestety, to nie to słowo.")
+                self.word_map = {}
+                self.placed_boxes = []
+                #self.obszar_gry.delete("all")
+                if self.crosshair:
+                    self.crosshair.destroy()
+                    self.crosshair = None
+
 
             if text_ok:
                 self.obszar_gry.tag_raise(text_ok)
@@ -244,8 +297,7 @@ class Aplikacja:
             # przywróć po krótkim czasie
             self.root.after(200, lambda: self.obszar_gry.itemconfigure(info['rect_id'], outline='', width=1))
 
-            # usuń komunikaty po 1.5 sekundy
-            self.root.after(1500, lambda: (self.obszar_gry.delete(text_ok) if text_ok else None))
+            print(self.remember_good_word)
 
         except Exception:
             pass
