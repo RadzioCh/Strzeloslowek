@@ -1,3 +1,5 @@
+cel:1
+lang:en
 harvest;żniwa/zbiór
 bounty;hojność
 growth;wzrost

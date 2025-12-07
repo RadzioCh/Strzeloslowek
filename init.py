@@ -1,15 +1,29 @@
+from threading import Thread
 import tkinter as tk
 from GetWords import GetWords
 from Crosshair import Crosshair
 import random
 from tkinter import font as tkfont
 from time import sleep
+import pyttsx3
+import os
+import pygame
+from threading import Thread
+from gtts import gTTS
+
 
 class Aplikacja:
     def __init__(self, root):
         self.root = root
         self.root.title("Strzelosłówek")
         self.root.geometry(f"{self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}")
+        
+        # narzędzie do mowy SYSTEMOWE  działa z funkcją generate_speech_OLD
+        # self.engine = pyttsx3.init()
+        # self.engine.setProperty('rate', 150)
+        # self.engine.setProperty('volume', 1.0)
+
+        
         
         # Tworzenie głównego menu
         self.menu_glowne = tk.Menu(self.root)
@@ -36,8 +50,8 @@ class Aplikacja:
         self.word_map = {}
         self.remember_good_word = {}
         self.countWords = 0
-
-
+        self.all_words = ""
+        self.lang = "en"
         
 
     def start(self):
@@ -57,7 +71,10 @@ class Aplikacja:
 
         # pobieramy słówka
         self.getWords = GetWords()
-        words = self.getWords.get_word_list()
+        words, cel, lang = self.getWords.get_word_list()
+        self.lang = lang
+
+        # print('Liczba słówek do nauki:', self.all_words)
 
         self.countWords = len(words)
         countWordsArray = (self.countWords -1)
@@ -152,9 +169,75 @@ class Aplikacja:
         # utwórz celowniczek który będzie śledzić mysz nad canvassem
         self.crosshair = Crosshair(self.obszar_gry)
 
+
+    def generate_speech(self, word):
+        def speak():
+            output_file = "out.mp3"
+            try:
+
+                # Inicjalizuj pygame mixer dla odtwarzania dźwięku
+                pygame.mixer.init()
+
+                # lang = detect(self.all_words)
+
+                # print(f"Wykryty język: {lang}")
+                
+                # Utwórz plik audio
+                tts = gTTS(text=word, lang=self.lang, slow=False)
+                tts.save(output_file)
+                
+                # Odtwórz za pomocą pygame
+                pygame.mixer.music.load(output_file)
+                pygame.mixer.music.play()
+                
+                # Czekaj aż się skończy
+                while pygame.mixer.music.get_busy():
+                    sleep(0.1)
+
+                # Zatrzymaj i zamknij mixer aby zwolnić plik
+                pygame.mixer.music.stop()
+                pygame.mixer.quit()
+                sleep(0.1)
+
+                # Usuń plik po odtworzeniu
+                if os.path.exists(output_file):
+                    os.remove(output_file)
+                    
+            except Exception as e:
+                print(f"Błąd gTTS: {e}")
+        
+        thread = Thread(target=speak, daemon=False)
+        thread.start()
+        thread.join()
+
+    def generate_speech_OLD(self, word):
+        def speak():
+            try:
+                lang = detect(word)
+                # Mapowanie na dostępne głosy Windows
+                if lang == 'pl':
+                    voice_name = "Microsoft Paulina Desktop - Polish"
+                else:  # domyślnie angielski
+                    voice_name = "Microsoft Zira Desktop - English (United States)"
+                
+                # Ustaw głos
+                voices = self.engine.getProperty('voices')
+                for voice in voices:
+                    if voice_name in voice.name:
+                        self.engine.setProperty('voice', voice.id)
+                        break
+
+                self.engine.say(word)
+                self.engine.runAndWait()
+            except Exception as e:
+                print(f"Błąd: {e}")
+        
+        thread = Thread(target=speak, daemon=True).start()
+        thread.start()
+        thread.join()  # czeka aż wątek się skończy
+
     def reload_game(self):
         self.new_load_words(self.countWordsArray, self.words, self.width, self.height)
-
 
     def writeWord(self, word, translateWord, width, height, showTranslaction=False):
 
@@ -304,6 +387,9 @@ class Aplikacja:
                     width=300,
                     justify="center"
                 )
+
+                # Generuj dźwięk asynchronicznie
+                self.root.after(0, lambda: self.generate_speech(translatWorld['word']))
 
                 self.obszar_gry.tag_lower(text_ok)
                 self.remember_good_word[info['word']] = True
