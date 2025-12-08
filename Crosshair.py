@@ -1,8 +1,9 @@
 import tkinter as tk
 
 class Crosshair:
-    def __init__(self, canvas, radius=12, color='red', thickness=2):
+    def __init__(self, canvas, radius=12, color='red', thickness=2, root=None):
         self.canvas = canvas
+        self.root = root or canvas.winfo_toplevel()  # Pobierz root jeśli nie podany
         self.radius = radius
         self.color = color
         self.thickness = thickness
@@ -68,6 +69,28 @@ class Crosshair:
     def _on_destroy(self, event):
         self.destroy()
 
+    def animate_shot(self, start_x, start_y):
+        x1, y1, x2, y2 = self.canvas.coords(self.oval)
+        center_x = (x1 + x2) / 2
+        center_y = (y1 + y2) / 2
+
+        shot_line = self.canvas.create_line(start_x, start_y, start_x, start_y, fill='red', width=3, tags='shot')
+        self.canvas.tag_raise('shot')
+
+        def animate_step(step=0, max_steps=20):
+            if step >= max_steps:
+                self.canvas.delete(shot_line)
+                return
+
+            new_x = start_x + (center_x - start_x) * (step + 1) / max_steps
+            new_y = start_y + (center_y - start_y) * (step + 1) / max_steps
+
+            self.canvas.coords(shot_line, start_x, start_y, new_x, new_y)
+            self.root.after(30, lambda: animate_step(step + 1))
+
+        animate_step()
+
+
     def destroy(self):
         try:
             self.canvas.unbind('<Motion>')
@@ -75,6 +98,7 @@ class Crosshair:
             self.canvas.unbind('<Leave>')
             self.canvas.unbind('<Destroy>')
             self.canvas.delete('crosshair')
+            self.canvas.delete('shot')  # Usuń ewentualne pozostałe linie strzału
             try:
                 self.canvas.config(cursor='')
             except Exception:

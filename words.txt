@@ -1,15 +1,41 @@
-cel:1
+cel:2
 lang:en
-harvest;żniwa/zbiór
-bounty;hojność
-growth;wzrost
-nourish;karmić/odżywiać
-rowing;wiosłowanie
-jellyfish;meduza
-whale;wieloryb
-blue whale;płetwal błękitny
-hare;zając
-to reach;dosięgać
-to dig;kopać
-plate;talerz
-boar;dzik
+bathroom;łazienka
+bedroom;sypialnia
+door;drzwi
+floor;podłoga
+garage;garaż
+garden;ogród
+kitchen;kuchnia
+living room;pokój dzienny, salon
+wall;ściana
+window;okno
+armchair;fotel
+bath;wanna
+bed;łóżko
+chair;krzesło
+desk;biurko
+fridge;lodówka
+sofa;sofa, kanapa
+table;stół
+wardrobe;szafa
+inside;wewnątrz
+nothing;nic
+object;przedmiot
+part;część
+place;miejsce
+behind;za
+in;w
+in front of;przed
+next to;obok
+on;na
+under;pod
+board;tablica
+book;książka
+boy;chłopiec
+carpet;dywan
+cushion;poduszka
+lamp;lampa
+plant;roślina doniczkowa
+poster;plakat
+television (TV);telewizor

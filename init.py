@@ -5,11 +5,12 @@ from Crosshair import Crosshair
 import random
 from tkinter import font as tkfont
 from time import sleep
-import pyttsx3
+#import pyttsx3
 import os
 import pygame
 from threading import Thread
 from gtts import gTTS
+import tempfile
 
 
 class Aplikacja:
@@ -52,6 +53,7 @@ class Aplikacja:
         self.countWords = 0
         self.all_words = ""
         self.lang = "en"
+        self.cel = 1
         
 
     def start(self):
@@ -73,6 +75,7 @@ class Aplikacja:
         self.getWords = GetWords()
         words, cel, lang = self.getWords.get_word_list()
         self.lang = lang
+        self.cel = cel
 
         # print('Liczba słówek do nauki:', self.all_words)
 
@@ -103,6 +106,9 @@ class Aplikacja:
             self.obszar_gry.tag_lower(text_ok)
 
     def new_load_words(self, countWordsArray, words, width=0, height=0):
+
+        
+
         self.word_map = {}
         self.placed_boxes = []
         self.obszar_gry.delete("all")
@@ -134,7 +140,7 @@ class Aplikacja:
                 anchor="w",
                 font=("Arial", 50),
                 fill="black",
-                width=self.obszar_gry.winfo_width(),
+                width=500,
                 justify="center"
             )
             self.obszar_gry.tag_lower(text_winer)
@@ -167,20 +173,15 @@ class Aplikacja:
             self.writeWord(nw[0], nw[1], width, height)
 
         # utwórz celowniczek który będzie śledzić mysz nad canvassem
-        self.crosshair = Crosshair(self.obszar_gry)
+        self.crosshair = Crosshair(self.obszar_gry, root=self.root)
 
 
     def generate_speech(self, word):
         def speak():
             output_file = "out.mp3"
             try:
-
                 # Inicjalizuj pygame mixer dla odtwarzania dźwięku
                 pygame.mixer.init()
-
-                # lang = detect(self.all_words)
-
-                # print(f"Wykryty język: {lang}")
                 
                 # Utwórz plik audio
                 tts = gTTS(text=word, lang=self.lang, slow=False)
@@ -192,12 +193,13 @@ class Aplikacja:
                 
                 # Czekaj aż się skończy
                 while pygame.mixer.music.get_busy():
-                    sleep(0.1)
+                    #sleep(0.1)
+                    pass
 
                 # Zatrzymaj i zamknij mixer aby zwolnić plik
                 pygame.mixer.music.stop()
                 pygame.mixer.quit()
-                sleep(0.1)
+                #sleep(0.1)
 
                 # Usuń plik po odtworzeniu
                 if os.path.exists(output_file):
@@ -206,35 +208,9 @@ class Aplikacja:
             except Exception as e:
                 print(f"Błąd gTTS: {e}")
         
-        thread = Thread(target=speak, daemon=False)
+        thread = Thread(target=speak, daemon=True)
         thread.start()
-        thread.join()
-
-    def generate_speech_OLD(self, word):
-        def speak():
-            try:
-                lang = detect(word)
-                # Mapowanie na dostępne głosy Windows
-                if lang == 'pl':
-                    voice_name = "Microsoft Paulina Desktop - Polish"
-                else:  # domyślnie angielski
-                    voice_name = "Microsoft Zira Desktop - English (United States)"
-                
-                # Ustaw głos
-                voices = self.engine.getProperty('voices')
-                for voice in voices:
-                    if voice_name in voice.name:
-                        self.engine.setProperty('voice', voice.id)
-                        break
-
-                self.engine.say(word)
-                self.engine.runAndWait()
-            except Exception as e:
-                print(f"Błąd: {e}")
-        
-        thread = Thread(target=speak, daemon=True).start()
-        thread.start()
-        thread.join()  # czeka aż wątek się skończy
+        #thread.join()
 
     def reload_game(self):
         self.new_load_words(self.countWordsArray, self.words, self.width, self.height)
@@ -269,6 +245,9 @@ class Aplikacja:
                 font=font_t,
                 fill="black"
             )
+
+            if self.cel == 2:
+                self.root.after(5, lambda: self.generate_speech(translateWord))
 
             self.obszar_gry.tag_lower(rect_id, text_id_translate)
 
@@ -365,40 +344,53 @@ class Aplikacja:
         info = self.word_map.get(tag)
         if not info:
             return
+
+        # Animacja strzału do środka kółka
+        if self.crosshair:
+            self.crosshair.animate_shot(event.x, event.y)
         
         try:
             self.obszar_gry.update_idletasks()
-            cx = (self.obszar_gry.winfo_width() // 2) - 250
+            cx = self.obszar_gry.winfo_width() // 2
             cy = self.obszar_gry.winfo_height() // 2
         except Exception:
             cx, cy = 200, 200
 
-        
+            print(f"cx: {cx}, cy: {cy}, canvas width: {self.obszar_gry.winfo_width()}, height: {self.obszar_gry.winfo_height()}")
+
         # przykładowa akcja: wypisz i chwilowo podświetl ramkę
         #print(f"Kliknięto: {info['word']}  tłum.: {info.get('translate')}")
         try:
+            if translatWorld is None:
+                print("translatWorld is None")
+                return
+
             if info['word'] == translatWorld['word']:
+                # Generuj dźwięk asynchronicznie
+                
+
                 text_ok = self.obszar_gry.create_text(
                     cx, cy,
                     text="GOOD JOB!",
-                    anchor="w",
+                    anchor="center",
                     font=("Arial", 60),
                     fill="black",
                     width=300,
                     justify="center"
                 )
-
-                # Generuj dźwięk asynchronicznie
-                self.root.after(0, lambda: self.generate_speech(translatWorld['word']))
-
                 self.obszar_gry.tag_lower(text_ok)
+
+                if self.cel == 1:
+                    self.root.after(10, lambda: self.generate_speech(translatWorld['word']))
+
                 self.remember_good_word[info['word']] = True
 
-                # usuń komunikaty po x 
+                # usuń komunikaty po x
                 self.root.after(800, lambda: (self.obszar_gry.delete(text_ok) if text_ok else None))
                 self.root.after(900, lambda: self.reload_game())
 
             elif info['word'] != translatWorld['word']:
+                print("GAME OVER condition met")
                 bad_text = self.obszar_gry.create_text(
                     cx, cy,
                     text=f"GAME OVER\nPrawidłowe słówko to: {translatWorld['word']}",
@@ -430,8 +422,8 @@ class Aplikacja:
 
             print(self.remember_good_word)
 
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Exception in on_word_click: {e}")
 
 
     def pauza(self):
